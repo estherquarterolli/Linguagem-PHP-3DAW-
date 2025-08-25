@@ -159,10 +159,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             <label for="operacao">Operação:</label>
             <select name="operacao" id="operacao">
-                <option value="soma" <?php if ($operacao == 'soma') { echo 'selected'; } ?>>Somar (+)</option>
-                <option value="subtracao" <?php if ($operacao == 'subtracao') { echo 'selected'; } ?>>Subtrair (-)</option>
-                <option value="multiplicacao" <?php if ($operacao == 'multiplicacao') { echo 'selected'; } ?>>Multiplicar (×)</option>
-                <option value="divisao" <?php if ($operacao == 'divisao') { echo 'selected'; } ?>>Dividir (÷)</option>
+                <option value="soma" <?php if ($operacao == 'soma')  ?>>Somar (+)</option>
+                <option value="subtracao" <?php if ($operacao == 'subtracao')  ?>>Subtrair (-)</option>
+                <option value="multiplicacao" <?php if ($operacao == 'multiplicacao') ?>>Multiplicar (×)</option>
+                <option value="divisao" <?php if ($operacao == 'divisao')  ?>>Dividir (÷)</option>
             </select>
             
             <label for="valor2">Segundo valor:</label>
