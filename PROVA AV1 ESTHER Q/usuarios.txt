@@ -1,0 +1,2 @@
+1;Administrador;admin@sisgame.com;$2y$10$PdMc6iScd2fa/6aXl3X9UeSHnxFQmBh1/n.ZLbLTxY.ovkNtje6.y;admin
+1758588077;Esther Quarterolli;esther@gmail.com;$2y$10$gF/OHreah0OYyHJXekS9vOc8slBTVv/FCKLwnhLYAqr4YzuClqkxa;usuario

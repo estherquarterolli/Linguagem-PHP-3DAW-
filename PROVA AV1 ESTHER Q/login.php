@@ -1,6 +1,11 @@
 <?php
-// login.php
 session_start();
+if (isset($_SESSION['usuario_logado'])) {
+    header('Location: menu.php');
+    exit();
+}
+
+$erro = "";
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = $_POST['email'];
@@ -8,9 +13,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     $fileName = "usuarios.txt";
     
-    if (file_exists($fileName)) {
+    if (!file_exists($fileName)) {
+        $erro = "Sistema não inicializado. <a href='criar_admin.php'>Clique aqui para inicializar</a>";
+    } else {
         $file = fopen($fileName, "r");
         $loginValido = false;
+        $usuarioDados = null;
         
         while (!feof($file)) {
             $linha = fgets($file);
@@ -19,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $dados = explode(";", $linha);
             if (count($dados) >= 5 && trim($dados[2]) == $email) {
                 if (password_verify($senha, trim($dados[3]))) {
-                    $_SESSION['usuario_logado'] = [
+                    $usuarioDados = [
                         'id' => $dados[0],
                         'nome' => $dados[1],
                         'email' => $dados[2],
@@ -33,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         fclose($file);
         
         if ($loginValido) {
+            $_SESSION['usuario_logado'] = $usuarioDados;
             header('Location: menu.php');
             exit();
         } else {
@@ -40,39 +49,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 }
-
-if (isset($_GET['logout'])) {
-    session_destroy();
-    header('Location: login.php');
-    exit();
-}
 ?>
 
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <section class="menu-container">
+<body class="login-bg">
+    <div class="login-box">
         <h1>Login</h1>
         
-        <?php if (isset($erro)): ?>
-            <p style="color: red;"><?php echo $erro; ?></p>
+        <?php if (!empty($erro)): ?>
+            <div class="alert error"><?php echo $erro; ?></div>
         <?php endif; ?>
         
         <form method="post">
-            Email: <input type="email" name="email" required><br><br>
-            Senha: <input type="password" name="senha" required><br><br>
-            
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="senha" placeholder="Senha" required>
             <input type="submit" value="Entrar">
         </form>
         
-        <br>
-        <a href="usuarios.php?acao=criar">Criar nova conta</a>
-    </section>
+        <p style="text-align: center; margin-top: 15px;">
+            <a href="criar_adm.php">Primeiro acesso? Inicializar sistema</a>
+        </p>
+    </div>
 </body>
 </html>

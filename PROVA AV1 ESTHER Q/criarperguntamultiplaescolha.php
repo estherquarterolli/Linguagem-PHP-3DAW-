@@ -1,37 +1,11 @@
-
-
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar Pergunta Múltipla Escolha</title>
-        <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
-</head>
-<body>
-
-<section class="menu-container">
-    <form action="" method="post">
-
-        PERGUNTA:<input type="text" name="pergunta"><br>
-        ID:<input type="text" name="ID">
-        A)<input type="text" name="alternativaA"><br>
-        B)<input type="text" name="alternativaB"><br>
-        C)<input type="text" name="alternativaC"><br>
-        D)<input type="text" name="alternativaD"><br>
-        E)<input type="text" name="alternativaE"><br>
-        Alternativa correta:<input type="text" name="alternativaCorreta">
-
-        <input type="submit" value="Enviar">
-    </form>
-</section>
-</body>
-</html>
 <?php
+session_start();
+if (!isset($_SESSION['usuario_logado']) || $_SESSION['usuario_logado']['tipo'] != 'admin') {
+    header('Location: login.php');
+    exit();
+}
 
-if($_SERVER['REQUEST_METHOD'] == 'POST'){
-
-    $nome_arquivo = "perguntas.txt";
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $pergunta = $_POST["pergunta"];
     $ID = $_POST["ID"];
     $altA = $_POST["alternativaA"];
@@ -41,21 +15,50 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
     $altE = $_POST["alternativaE"];
     $alt_correta_id = $_POST["alternativaCorreta"];
 
-    // Garante que os campos não estão vazios
-    if (empty($pergunta) || empty($ID) || empty($altA) || empty($altB) || empty($altC) || empty($altD)|| empty($altE)  || empty($alt_correta_id)) {
-        echo "Por favor, preencha todos os campos.";
-        exit; 
+    if (empty($pergunta) || empty($ID) || empty($alt_correta_id)) {
+        $msg = "Preencha todos os campos obrigatórios.";
+    } else {
+        $linha = "$ID;$pergunta;$altA;$altB;$altC;$altD;$altE;$alt_correta_id\n";
+        file_put_contents("perguntas.txt", $linha, FILE_APPEND);
+        $msg = "Pergunta cadastrada com sucesso!";
     }
-    
-
-
-    $file = fopen($nome_arquivo, 'a') or die("Não foi possível abrir/criar arquivo");
-
-    $linha = $ID . ";" . $pergunta . ";" . $altA . ";" . $altB . ";" . $altC . ";" . $altD . ";" . $altE . ";". $alt_correta_id . "\n";
-
-    fwrite($file, $linha);
-    fclose($file);
-    echo "Pergunta Cadastrada";
 }
-
 ?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Criar Pergunta Múltipla Escolha</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Criar Pergunta Múltipla Escolha</h1>
+        
+        <?php if (isset($msg)): ?>
+            <div class="alert success"><?php echo $msg; ?></div>
+        <?php endif; ?>
+        
+        <form method="post">
+            <input type="text" name="ID" placeholder="ID da pergunta" required>
+            <textarea name="pergunta" placeholder="Digite a pergunta" required></textarea>
+            
+            <input type="text" name="alternativaA" placeholder="Alternativa A">
+            <input type="text" name="alternativaB" placeholder="Alternativa B">
+            <input type="text" name="alternativaC" placeholder="Alternativa C">
+            <input type="text" name="alternativaD" placeholder="Alternativa D">
+            <input type="text" name="alternativaE" placeholder="Alternativa E">
+            
+            <input type="text" name="alternativaCorreta" placeholder="Letra da alternativa correta (A, B, C, D ou E)" required>
+            
+            <input type="submit" value="Salvar Pergunta">
+        </form>
+        
+        <div class="menu">
+            <a href="menucriarpergunta.php">Voltar</a>
+            <a href="menu.php">Menu Principal</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,7 @@
+Olá professor, segue um roteiro para ajudar na execução do crud!!1
+
+
+login adm:
+admin@sisgame.com
+admin123
+

@@ -1,51 +1,57 @@
+<?php
+session_start();
+if (!isset($_SESSION['usuario_logado'])) {
+    header('Location: login.php');
+    exit();
+}
+?>
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Listar perguntas</title>
-    <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+    <title>Listar Perguntas</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-     <div class="menu-container">
-                
-        <h1>Listar perguntas</h1>
-        <table>
-
-            <tr><th>ID</th><th>Pergunta</th><th>alternativa A</th><th>Alternativa B</th><th>Alternativa C</th><th>alternativa D</th><th>alternativa E</th><th>Gabarito</th></tr>
-
-            <?php
-         
-            $file = fopen("perguntas.txt", 'r') or die("Não foi possível abrir o arquivo");
+    <div class="container">
+        <h1>Listar Perguntas</h1>
+        
+        <?php
+        $fileName = "perguntas.txt";
+        if (!file_exists($fileName)) {
+            echo "<p>Nenhuma pergunta cadastrada.</p>";
+        } else {
+            echo '<table>
+                <tr><th>ID</th><th>Pergunta</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>Resposta</th></tr>';
             
-       
+            $file = fopen($fileName, 'r');
             while(!feof($file)){
-
-                $linha = fgets($file); 
-              
+                $linha = fgets($file);
                 if(!empty(trim($linha))){
-                    $colunaDados = explode(";", $linha); 
-                   
-                    if(count($colunaDados) >= 7){
-
-                        echo "<tr><td>" . $colunaDados[0] . "</td>" . 
-                        "<td>" . $colunaDados[1] . "</td>" . 
-                        "<td>" . $colunaDados[2] . "</td>" . 
-                        "<td>" . $colunaDados[3] . "</td>" . 
-                        "<td>" . $colunaDados[4] . "</td>" . 
-                        "<td>" . $colunaDados[5] . "</td>"  .  
-                        "<td>" . $colunaDados[6] . "</td>"  .                        
-                        "<td>" . $colunaDados[7] . "</td><tr>"; 
-                    }
-                }                
+                    $dados = explode(";", $linha);
+                    $dados = array_pad($dados, 8, '');
+                    
+                    echo "<tr>
+                        <td>{$dados[0]}</td>
+                        <td>{$dados[1]}</td>
+                        <td>{$dados[2]}</td>
+                        <td>{$dados[3]}</td>
+                        <td>{$dados[4]}</td>
+                        <td>{$dados[5]}</td>
+                        <td>{$dados[6]}</td>
+                        <td>" . trim($dados[7]) . "</td>
+                    </tr>";
+                }
             }
             fclose($file);
-            ?>
-            
-        </table>
+            echo '</table>';
+        }
+        ?>
+        
+        <div class="menu">
+            <a href="menu.php">Voltar ao Menu</a>
+        </div>
     </div>
-</body>
-</html>
-     </div>
 </body>
 </html>
