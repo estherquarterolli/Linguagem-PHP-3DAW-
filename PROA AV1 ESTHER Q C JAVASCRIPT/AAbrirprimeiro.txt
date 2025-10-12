@@ -1,0 +1,12 @@
+Olá professor, segue um roteiro para ajudar na execução do crud!!1
+
+
+login adm:
+admin@sisgame.com
+admin123
+
+login user:
+esther@gmail.com
+1234
+
+Estou tentando corrigir o erro de login e cadastro mas como ainda n identifiquei, estou passando um usuario que eu ja sei que funciona!!
