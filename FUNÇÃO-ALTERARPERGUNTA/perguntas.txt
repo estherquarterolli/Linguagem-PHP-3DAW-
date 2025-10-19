@@ -1,0 +1,3 @@
+Q001;Qual é a  do Brasil?
+Q002;O que você achou do meu serviço?
+Q003;Qual a melhor forma de estudar PHP?

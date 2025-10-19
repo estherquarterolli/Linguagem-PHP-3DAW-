@@ -5,14 +5,14 @@ Se for para alterar ou deletar pergunta, vai pedir um login
 de "adm" para fazer essas alterações
 
 Funções do menu:
-- Listar perguntas 
-- Alterar perguntas
-- Deletar perguntas
-- Criar perguntas
-- Listar respostas
-- Alterar respostas
-- Deletar respostas
-- Criar respostas
+- Listar perguntas OK
+- Alterar perguntas OK
+- Deletar perguntas OK
+- Criar perguntas OK
+- Listar respostas OK
+- Alterar respostas OK
+- Deletar respostas OK
+- Criar respostas OK
 
 criia uma tela de login direto?? e ai depois vai para o menu 
 
