@@ -1,5 +1,5 @@
 <?php
-// excluirpergunta.php
+
 session_start();
 
 if (!isset($_SESSION['usuario_logado'])) {
@@ -7,63 +7,56 @@ if (!isset($_SESSION['usuario_logado'])) {
     exit();
 }
 
-$msg = "";
-$ID_excluir = null;
 
-// Verifica se a ação de exclusão foi enviada via GET (para compatibilidade e a lógica de exclusão)
+require 'conexao.php';
+
+$msg = "";
+$success = false;
+
+// Verifica se a ação de exclusão foi enviada (lógica AJAX)
+$is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
     $ID = $_GET['ID'];
-    $fileName = "perguntas.txt";
-    $tempFile = "perguntastemp.txt";
-    $ID_excluir = $ID;
-    $success = false;
     
-    if (!file_exists($fileName)) {
-        $msg = "Arquivo não encontrado.";
-    } else {
-        $file = fopen($fileName, "r");
-        $temp = fopen($tempFile, "w");
-        $encontrou = false;
+  
+    $sql = "DELETE FROM perguntas WHERE id_pergunta = ?";
+    $stmt = $conexao->prepare($sql);
+    
+    if ($stmt) {
+    
+        $stmt->bind_param("s", $ID);
         
-        while (!feof($file)) {
-            $linha = fgets($file);
-            
-            if (trim($linha) == "") continue;
-            
-            $colunaDados = explode(";", $linha);
-            
-            if (count($colunaDados) >= 8) {
-                if (trim($colunaDados[0]) == $ID) {
-                    $encontrou = true;
-                } else {
-                    fwrite($temp, $linha);
-                }
-            }
-        }
-        
-        fclose($file);
-        fclose($temp);
-        
-        if ($encontrou) {
-            if (rename($tempFile, $fileName)) {
+
+        if ($stmt->execute()) {
+         
+            if ($stmt->affected_rows > 0) {
                 $msg = "Pergunta excluída com sucesso!";
                 $success = true;
             } else {
-                $msg = "Erro ao excluir a pergunta.";
+                $msg = "Pergunta não encontrada.";
+                $success = false;
             }
         } else {
-            unlink($tempFile);
-            $msg = "Pergunta não encontrada.";
+            $msg = "Erro ao excluir a pergunta: " . $stmt->error;
+            $success = false;
         }
+       
+        $stmt->close();
+        
+    } else {
+        $msg = "Erro ao preparar a query: " . $conexao->error;
+        $success = false;
     }
-    
-    // Resposta para a chamada AJAX
-    $is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
+   
     if ($is_ajax) {
         header('Content-Type: application/json');
         echo json_encode(['success' => $success, 'msg' => $msg]);
+        $conexao->close(); // Fecha a conexão e termina o script
         exit();
     }
+ 
 }
 ?>
 
@@ -80,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
         <h1>Excluir Pergunta</h1>
         
         <div id="mensagem-status">
-            <?php if (!empty($msg)): ?>
-                <p><?php echo $msg; ?></p>
+            <?php if (!empty($msg) && !$is_ajax): // Mostra msg se não for AJAX ?>
+                <p class="<?php echo $success ? 'success' : 'error'; ?>"><?php echo $msg; ?></p>
             <?php endif; ?>
         </div>
         
@@ -93,25 +86,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
                 <th>Ação</th>
             </tr>
             <?php
-            $fileName = "perguntas.txt";
-            if (file_exists($fileName)) {
-                $file = fopen($fileName, "r");
-                
-                while (!feof($file)) {
-                    $linha = fgets($file);
-                    if (trim($linha) == "") continue;
+            
+            $sql_list = "SELECT id_pergunta, pergunta FROM perguntas ORDER BY id_pergunta";
+            $result = $conexao->query($sql_list);
+            
+            if ($result && $result->num_rows > 0) {
+           
+                while ($row = $result->fetch_assoc()) {
+                    $id_pergunta = htmlspecialchars($row['id_pergunta']);
+                    $pergunta_texto = htmlspecialchars($row['pergunta']);
                     
-                    $colunaDados = explode(";", $linha);
-                    if (count($colunaDados) >= 8) {
-                        echo "<tr id='linha-{$colunaDados[0]}'>
-                            <td>" . $colunaDados[0] . "</td>
-                            <td>" . $colunaDados[1] . "</td>
-                            <td><a href='#' data-id='{$colunaDados[0]}' class='link-excluir'>Excluir</a></td>
-                        </tr>";
-                    }
+                
+                    echo "<tr id='linha-{$id_pergunta}'>
+                            <td>{$id_pergunta}</td>
+                            <td>{$pergunta_texto}</td>
+                            <td><a href='#' data-id='{$id_pergunta}' class='link-excluir'>Excluir</a></td>
+                          </tr>";
                 }
-                fclose($file);
+            } else {
+                echo "<tr><td colspan='3'>Nenhuma pergunta cadastrada.</td></tr>";
             }
+          
             ?>
         </table>
         
@@ -120,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
     </section>
 
 <script>
+   
     document.addEventListener('DOMContentLoaded', () => {
         const tabela = document.getElementById('tabela-perguntas');
         const mensagemStatus = document.getElementById('mensagem-status');
@@ -136,11 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
         });
 
         function excluirPergunta(id, linhaTabela) {
-            // Limpa mensagens anteriores
             mensagemStatus.innerHTML = '<p style="color: #02121dff;">Excluindo...</p>';
             
-            // Usando Fetch para enviar a requisição de exclusão via GET
-            // Adiciona um cabeçalho para o PHP identificar a chamada AJAX
             const headers = new Headers();
             headers.append('X-Requested-With', 'XMLHttpRequest');
 
@@ -151,7 +144,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Remove a linha da tabela e exibe o status
                     linhaTabela.remove(); 
                     mensagemStatus.innerHTML = `<p style="color: green;">${data.msg}</p>`;
                 } else {
@@ -168,3 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
 
 </body>
 </html>
+<?php
+// Fecha a conexão que foi aberta no início do arquivo
+$conexao->close();
+?>

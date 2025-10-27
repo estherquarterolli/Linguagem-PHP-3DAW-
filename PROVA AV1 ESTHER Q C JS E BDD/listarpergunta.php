@@ -4,6 +4,8 @@ if (!isset($_SESSION['usuario_logado'])) {
     header('Location: login.php');
     exit();
 }
+
+require 'conexao.php';
 ?>
 
 <!DOCTYPE html>
@@ -18,35 +20,51 @@ if (!isset($_SESSION['usuario_logado'])) {
         <h1>Listar Perguntas</h1>
         
         <?php
-        $fileName = "perguntas.txt";
-        if (!file_exists($fileName)) {
+       
+        $sql = "SELECT * FROM perguntas ORDER BY id_pergunta";
+        
+   
+        $result = $conexao->query($sql);
+        
+        if (!$result) {
+            echo "<p>Erro ao consultar o banco de dados: " . $conexao->error . "</p>";
+        } elseif ($result->num_rows == 0) {
             echo "<p>Nenhuma pergunta cadastrada.</p>";
         } else {
+           
             echo '<table>
-                <tr><th>ID</th><th>Pergunta</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>Resposta</th></tr>';
+                    <tr>
+                        <th>ID</th>
+                        <th>Tipo</th>
+                        <th>Pergunta</th>
+                        <th>A</th>
+                        <th>B</th>
+                        <th>C</th>
+                        <th>D</th>
+                        <th>E</th>
+                        <th>Resposta</th>
+                    </tr>';
             
-            $file = fopen($fileName, 'r');
-            while(!feof($file)){
-                $linha = fgets($file);
-                if(!empty(trim($linha))){
-                    $dados = explode(";", $linha);
-                    $dados = array_pad($dados, 8, '');
-                    
-                    echo "<tr>
-                        <td>{$dados[0]}</td>
-                        <td>{$dados[1]}</td>
-                        <td>{$dados[2]}</td>
-                        <td>{$dados[3]}</td>
-                        <td>{$dados[4]}</td>
-                        <td>{$dados[5]}</td>
-                        <td>{$dados[6]}</td>
-                        <td>" . trim($dados[7]) . "</td>
-                    </tr>";
-                }
+       
+            while($row = $result->fetch_assoc()){
+                echo "<tr>
+                        <td>" . htmlspecialchars($row['id_pergunta']) . "</td>
+                        <td>" . htmlspecialchars($row['tipo']) . "</td>
+                        <td>" . htmlspecialchars($row['pergunta']) . "</td>
+                        <td>" . htmlspecialchars($row['alternativa_a']) . "</td>
+                        <td>" . htmlspecialchars($row['alternativa_b']) . "</td>
+                        <td>" . htmlspecialchars($row['alternativa_c']) . "</td>
+                        <td>" . htmlspecialchars($row['alternativa_d']) . "</td>
+                        <td>" . htmlspecialchars($row['alternativa_e']) . "</td>
+                        <td>" . htmlspecialchars($row['resposta_correta']) . "</td>
+                      </tr>";
             }
-            fclose($file);
+            
             echo '</table>';
         }
+        
+ 
+        $conexao->close();
         ?>
         
         <div class="menu">

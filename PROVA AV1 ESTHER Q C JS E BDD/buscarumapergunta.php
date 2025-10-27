@@ -1,5 +1,4 @@
 <?php
-// buscarumapergunta.php
 session_start();
 
 if (!isset($_SESSION['usuario_logado'])) {
@@ -7,52 +6,46 @@ if (!isset($_SESSION['usuario_logado'])) {
     exit();
 }
 
-$msg = "";
-$perguntaEncontrada = null;
+// Inclui a conexão com o banco
+require 'conexao.php';
 
-// Verifica se é uma chamada AJAX
-if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID']) && isset($_GET['ajax'])) {
+$htmlResultado = "";
+$perguntaEncontrada = null;
+$is_ajax = isset($_GET['ajax']) && $_GET['ajax'] == 'true';
+
+// Processa a busca se um ID for fornecido (seja AJAX ou não)
+if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
     
     $ID = $_GET['ID'];
-    $fileName = "perguntas.txt";
-    $htmlResultado = "";
     
-    if (!file_exists($fileName)) {
-        $htmlResultado = "<p>Arquivo não encontrado.</p>";
-    } else {
-        $file = fopen($fileName, "r");
-        $perguntaEncontrada = null;
-        $encontrou = false;
+    // 1. Preparar a SQL para buscar a pergunta
+    $sql = "SELECT * FROM perguntas WHERE id_pergunta = ?";
+    $stmt = $conexao->prepare($sql);
+    
+    if ($stmt) {
+        // 2. Vincular o ID
+        $stmt->bind_param("s", $ID);
         
-        while (!feof($file)) {
-            $linha = fgets($file);
-            if (trim($linha) == "") continue;
+        // 3. Executar a busca
+        $stmt->execute();
+        
+        // 4. Obter o resultado
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            // 5. Pergunta encontrada, buscar dados
+            $perguntaEncontrada = $result->fetch_assoc();
             
-            $colunaDados = explode(";", $linha);
-            if (count($colunaDados) >= 8 && trim($colunaDados[0]) == $ID) {
-                $perguntaEncontrada = [
-                    'ID' => $colunaDados[0],
-                    'pergunta' => $colunaDados[1],
-                    'altA' => $colunaDados[2],
-                    'altB' => $colunaDados[3],
-                    'altC' => $colunaDados[4],
-                    'altD' => $colunaDados[5],
-                    'altE' => $colunaDados[6],
-                    'altCorreta' => trim($colunaDados[7])
-                ];
-                $encontrou = true;
-                break;
-            }
-        }
-        fclose($file);
-        
-        if ($encontrou) {
             $p = $perguntaEncontrada;
+            
+            // 6. Montar o HTML de resposta
+            // Usamos htmlspecialchars para evitar XSS
             $htmlResultado = '
                 <h2>Pergunta Encontrada</h2>
                 <table border="1" style="width: 100%;">
                     <tr>
                         <th>ID</th>
+                        <th>Tipo</th>
                         <th>Pergunta</th>
                         <th>Alternativa A</th>
                         <th>Alternativa B</th>
@@ -62,24 +55,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID']) && isset($_GET['aj
                         <th>Resposta Correta</th>
                     </tr>
                     <tr>
-                        <td>' . htmlspecialchars($p['ID']) . '</td>
+                        <td>' . htmlspecialchars($p['id_pergunta']) . '</td>
+                        <td>' . htmlspecialchars($p['tipo']) . '</td>
                         <td>' . htmlspecialchars($p['pergunta']) . '</td>
-                        <td>' . htmlspecialchars($p['altA']) . '</td>
-                        <td>' . htmlspecialchars($p['altB']) . '</td>
-                        <td>' . htmlspecialchars($p['altC']) . '</td>
-                        <td>' . htmlspecialchars($p['altD']) . '</td>
-                        <td>' . htmlspecialchars($p['altE']) . '</td>
-                        <td>' . htmlspecialchars($p['altCorreta']) . '</td>
+                        <td>' . htmlspecialchars($p['alternativa_a']) . '</td>
+                        <td>' . htmlspecialchars($p['alternativa_b']) . '</td>
+                        <td>' . htmlspecialchars($p['alternativa_c']) . '</td>
+                        <td>' . htmlspecialchars($p['alternativa_d']) . '</td>
+                        <td>' . htmlspecialchars($p['alternativa_e']) . '</td>
+                        <td>' . htmlspecialchars($p['resposta_correta']) . '</td>
                     </tr>
                 </table>';
         } else {
             $htmlResultado = "<p>Pergunta não encontrada.</p>";
         }
+        
+        // 7. Fechar o statement
+        $stmt->close();
+        
+    } else {
+        $htmlResultado = "<p>Erro ao preparar a consulta: " . $conexao->error . "</p>";
     }
     
-    echo $htmlResultado;
-    exit; // Termina o script após a requisição AJAX
+    // Se for AJAX, imprime o resultado e para o script
+    if ($is_ajax) {
+        echo $htmlResultado;
+        $conexao->close();
+        exit;
+    }
+    // Se não for AJAX, $htmlResultado será usado no HTML abaixo
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -100,35 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID']) && isset($_GET['aj
         </form>
         
         <div id="resultado-busca">
-            <?php if (!empty($msg)): ?>
-                <p><?php echo $msg; ?></p>
-            <?php endif; ?>
-            
-            <?php if ($perguntaEncontrada): ?>
-            <h2>Pergunta Encontrada</h2>
-            <table border="1" style="width: 100%;">
-                <tr>
-                    <th>ID</th>
-                    <th>Pergunta</th>
-                    <th>Alternativa A</th>
-                    <th>Alternativa B</th>
-                    <th>Alternativa C</th>
-                    <th>Alternativa D</th>
-                    <th>Alternativa E</th>
-                    <th>Resposta Correta</th>
-                </tr>
-                <tr>
-                    <td><?php echo $perguntaEncontrada['ID']; ?></td>
-                    <td><?php echo $perguntaEncontrada['pergunta']; ?></td>
-                    <td><?php echo $perguntaEncontrada['altA']; ?></td>
-                    <td><?php echo $perguntaEncontrada['altB']; ?></td>
-                    <td><?php echo $perguntaEncontrada['altC']; ?></td>
-                    <td><?php echo $perguntaEncontrada['altD']; ?></td>
-                    <td><?php echo $perguntaEncontrada['altE']; ?></td>
-                    <td><?php echo $perguntaEncontrada['altCorreta']; ?></td>
-                </tr>
-            </table>
-            <?php endif; ?>
+            <?php echo $htmlResultado; // Exibe o resultado se a busca não foi via AJAX ?>
         </div>
         
         <br>
@@ -136,13 +114,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID']) && isset($_GET['aj
     </section>
 
 <script>
+
     document.addEventListener('DOMContentLoaded', () => {
         const formBusca = document.getElementById('form-busca');
         const inputID = document.getElementById('input-id');
         const resultadoBusca = document.getElementById('resultado-busca');
 
         formBusca.addEventListener('submit', (event) => {
-            event.preventDefault(); // Impede o envio do formulário padrão (recarregar a página)
+            event.preventDefault(); 
             const id = inputID.value.trim();
 
             if (id) {
@@ -151,9 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID']) && isset($_GET['aj
         });
 
         function buscarPergunta(id) {
-            resultadoBusca.innerHTML = '<p>Buscando...</p>'; // Mensagem de carregamento
+            resultadoBusca.innerHTML = '<p>Buscando...</p>'; 
 
-            // O parâmetro 'ajax=true' indica ao PHP que é uma requisição assíncrona
             fetch(`buscarumapergunta.php?ID=${id}&ajax=true`, {
                 method: 'GET'
             })
@@ -164,7 +142,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID']) && isset($_GET['aj
                 return response.text();
             })
             .then(html => {
-                // Injeta o HTML retornado pelo PHP na div de resultados
                 resultadoBusca.innerHTML = html; 
             })
             .catch(error => {
@@ -177,3 +154,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID']) && isset($_GET['aj
 
 </body>
 </html>
+<?php
+
+if ($conexao) {
+    $conexao->close();
+}
+?>
