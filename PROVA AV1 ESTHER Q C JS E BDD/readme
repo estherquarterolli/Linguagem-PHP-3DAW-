@@ -1,0 +1,20 @@
+O arquivo precisa de login? 
+
+Criar um menu para o usuario escolher a opção. 
+Se for para alterar ou deletar pergunta, vai pedir um login
+de "adm" para fazer essas alterações
+
+Funções do menu:
+- Listar perguntas 
+- Alterar perguntas
+- Deletar perguntas
+- Criar perguntas
+- Listar respostas
+- Alterar respostas
+- Deletar respostas
+- Criar respostas
+
+criia uma tela de login direto?? e ai depois vai para o menu 
+
+
+falta corrigir o listar pergunta
