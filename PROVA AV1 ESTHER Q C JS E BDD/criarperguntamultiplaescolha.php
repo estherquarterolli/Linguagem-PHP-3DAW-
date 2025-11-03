@@ -5,6 +5,9 @@ if (!isset($_SESSION['usuario_logado']) || $_SESSION['usuario_logado']['tipo'] !
     exit();
 }
 
+// Inclui o arquivo de conexão com o banco de dados
+require 'conexao.php';
+
 $msg = "";
 $success = false;
 $is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
@@ -12,7 +15,7 @@ $is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
     
-    // Usa $_GET para ler os dados enviados pelo JavaScript
+
     $pergunta = $_GET["pergunta"];
     $ID = $_GET["ID"];
     $altA = $_GET["alternativaA"];
@@ -21,25 +24,63 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
     $altD = $_GET["alternativaD"];
     $altE = $_GET["alternativaE"];
     $alt_correta_id = $_GET["alternativaCorreta"];
+    $tipo = "multipla"; 
 
     if (empty($pergunta) || empty($ID) || empty($alt_correta_id)) {
         $msg = "Preencha todos os campos obrigatórios.";
         $success = false;
     } else {
-        // Formata os dados para salvar
-        $linha = "$ID;$pergunta;$altA;$altB;$altC;$altD;$altE;$alt_correta_id\n";
         
-        // Verifica se o arquivo existe e o cria se necessário, adicionando o conteúdo
-        if (file_put_contents("perguntas.txt", $linha, FILE_APPEND) !== false) {
-            $msg = "Pergunta cadastrada com sucesso! (ID: $ID)";
-            $success = true;
+
+        //Preparar a SQL (Evita SQL Injection)
+        $sql = "INSERT INTO perguntas 
+                    (id_pergunta, tipo, pergunta, alternativa_a, alternativa_b, alternativa_c, alternativa_d, alternativa_e, resposta_correta) 
+                VALUES 
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $stmt = $conexao->prepare($sql);
+
+        if ($stmt) {
+           
+            $stmt->bind_param("sssssssss", 
+                $ID, 
+                $tipo, 
+                $pergunta, 
+                $altA, 
+                $altB, 
+                $altC, 
+                $altD, 
+                $altE, 
+                $alt_correta_id
+            );
+
+            
+            if ($stmt->execute()) {
+                $msg = "Pergunta cadastrada com sucesso! (ID: $ID)";
+                $success = true;
+            } else {
+                // Verifica se o erro é de chave duplicada (ID já existe)
+                if ($conexao->errno == 1062) {
+                     $msg = "Erro: O ID da pergunta '$ID' já existe. Tente outro.";
+                } else {
+                     $msg = "Erro ao salvar no banco: " . $stmt->error;
+                }
+                $success = false;
+            }
+            //Fechar o statement
+            $stmt->close();
         } else {
-            $msg = "Erro ao salvar a pergunta no arquivo.";
+            $msg = "Erro ao preparar a query: " . $conexao->error;
             $success = false;
         }
+        
+        //Fechar a conexão
+        $conexao->close();
+
+        
     }
     
-    // Resposta para a chamada AJAX
+    // Resposta para a chamada AJAX 
     if ($is_ajax) {
         header('Content-Type: application/json');
         echo json_encode(['success' => $success, 'msg' => $msg]);
@@ -87,25 +128,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
     </div>
 
 <script>
+
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('create-question-form');
         const statusMessage = document.getElementById('status-message');
         const submitButton = document.getElementById('submit-button');
 
         form.addEventListener('submit', function(e) {
-            e.preventDefault(); // Impede o envio do formulário padrão
+            e.preventDefault(); 
             
-            // Limpa e exibe mensagem de processamento
             statusMessage.innerHTML = '<div class="alert" style="background: #f1c40f; color: #333;">Processando...</div>';
             submitButton.value = 'Salvando...';
             submitButton.disabled = true;
 
             const formData = new FormData(form);
-            
-            // Converte os dados do formulário em uma query string
             const params = new URLSearchParams(formData).toString();
             
-            // Adiciona um cabeçalho para o PHP identificar a chamada AJAX
             const headers = new Headers();
             headers.append('X-Requested-With', 'XMLHttpRequest');
 
@@ -114,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
                 method: 'GET',
                 headers: headers
             })
-        
+            
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -126,9 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
                 statusMessage.innerHTML = `<div class="alert ${alertClass}">${data.msg}</div>`;
                 
                 if (data.success) {
-                    // Se for sucesso, limpa os campos para o próximo cadastro
                     form.reset(); 
-                    // Foca no primeiro campo para agilizar
                     form.querySelector('input[name="ID"]').focus(); 
                 }
             })

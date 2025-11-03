@@ -6,40 +6,38 @@ if (!isset($_SESSION['usuario_logado'])) {
     exit();
 }
 
-// Inclui a conexão com o banco
 require 'conexao.php';
 
 $htmlResultado = "";
 $perguntaEncontrada = null;
 $is_ajax = isset($_GET['ajax']) && $_GET['ajax'] == 'true';
 
-// Processa a busca se um ID for fornecido (seja AJAX ou não)
+
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
     
     $ID = $_GET['ID'];
     
-    // 1. Preparar a SQL para buscar a pergunta
+   
     $sql = "SELECT * FROM perguntas WHERE id_pergunta = ?";
     $stmt = $conexao->prepare($sql);
     
     if ($stmt) {
-        // 2. Vincular o ID
+      
         $stmt->bind_param("s", $ID);
         
-        // 3. Executar a busca
+       
         $stmt->execute();
         
-        // 4. Obter o resultado
+     
         $result = $stmt->get_result();
         
         if ($result->num_rows > 0) {
-            // 5. Pergunta encontrada, buscar dados
+           
             $perguntaEncontrada = $result->fetch_assoc();
             
             $p = $perguntaEncontrada;
             
-            // 6. Montar o HTML de resposta
-            // Usamos htmlspecialchars para evitar XSS
+            
             $htmlResultado = '
                 <h2>Pergunta Encontrada</h2>
                 <table border="1" style="width: 100%;">
@@ -70,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['ID'])) {
             $htmlResultado = "<p>Pergunta não encontrada.</p>";
         }
         
-        // 7. Fechar o statement
+       
         $stmt->close();
         
     } else {
